@@ -1609,7 +1609,11 @@ export class Git {
 	async rev_list(
 		repoPath: string,
 		ref: string,
-		options?: { all?: boolean; maxParents?: number },
+		options?: {
+			all?: boolean;
+			maxParents?: number;
+			maxResults?: number;
+		},
 	): Promise<string[] | undefined> {
 		const params = ['rev-list'];
 		if (options?.all) {
@@ -1618,6 +1622,10 @@ export class Git {
 
 		if (options?.maxParents != null) {
 			params.push(`--max-parents=${options.maxParents}`);
+		}
+
+		if (options?.maxResults != null) {
+			params.push(`-n ${options.maxResults}`);
 		}
 
 		const rawData = await this.git<string>(
@@ -1883,6 +1891,10 @@ export class Git {
 			fileName ? `${ref}:./${fileName}` : `${ref}^{commit}`,
 		);
 		return data.length === 0 ? undefined : data.trim();
+	}
+
+	async update_ref(repoPath: string, ...args: string[]): Promise<void> {
+		await this.git<string>({ cwd: repoPath }, 'update-ref', ...args);
 	}
 
 	show(
