@@ -990,7 +990,7 @@ export class Git {
 			upstream?: string;
 			delete?: {
 				remote: string;
-				branches: string[];
+				branch: string;
 			};
 		},
 	): Promise<void> {
@@ -1020,7 +1020,7 @@ export class Git {
 		} else if (options.remote) {
 			params.push(options.remote);
 		} else if (options.delete) {
-			params.push('-d', options.delete.remote, ...options.delete.branches);
+			params.push('-d', options.delete.remote, options.delete.branch);
 		}
 
 		try {
