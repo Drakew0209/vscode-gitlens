@@ -319,23 +319,30 @@ export class GitHubEnterpriseIntegration extends GitHubIntegrationBase<SelfHoste
 	}
 }
 
-const GitHubPullRequestUrlRegex = /github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/;
 export type GitHubPullRequestURLIdentity = {
 	ownerAndRepo?: string;
 	prNumber?: string;
 };
 
 export function getPullRequestIdentityValuesFromSearch(search: string): GitHubPullRequestURLIdentity {
-	let match = search.match(GitHubPullRequestUrlRegex);
 	let ownerAndRepo: string | undefined = undefined;
 	let prNumber: string | undefined = undefined;
+
+	let match = search.match(/([^/]+\/[^/]+)\/pull\/(\d+)/); // with org and rep name
 	if (match != null) {
 		ownerAndRepo = match[1];
 		prNumber = match[2];
 	}
 
 	if (prNumber == null) {
-		match = search.match(/(?:#|\/)(\d+)/);
+		match = search.match(/(?:\/|^)pull\/(\d+)/); // without repo name
+		if (match != null) {
+			prNumber = match[1];
+		}
+	}
+
+	if (prNumber == null) {
+		match = search.match(/(?:#|\/)(\d+)/); // any number starting with # or /
 		if (match != null) {
 			prNumber = match[1];
 		}
