@@ -457,7 +457,6 @@ export class LaunchpadCommand extends QuickCommand<State> {
 				item: i,
 				picked: i.graphQLId === picked || i.graphQLId === topItem?.graphQLId,
 				group: ui,
-				alwaysShow: i.isSearched,
 			};
 		};
 
@@ -623,6 +622,11 @@ export class LaunchpadCommand extends QuickCommand<State> {
 				}
 				// Nothing is found above, so let's perform search in the API:
 				await updateItems(quickpick, value);
+				quickpick.items.forEach(i => {
+					if ('item' in i && doesPullRequestSatisfyGitHubRepositoryURLIdentity(i.item, prUrlIdentity)) {
+						i.alwaysShow = true;
+					}
+				});
 				quickpick.items = quickpick.items.filter((i): i is LaunchpadItemQuickPickItem => 'item' in i);
 				groupsHidden = true;
 				return true;
