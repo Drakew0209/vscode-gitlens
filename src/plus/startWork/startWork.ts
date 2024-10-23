@@ -24,7 +24,7 @@ import type { SearchedIssue } from '../../git/models/issue';
 import type { QuickPickItemOfT } from '../../quickpicks/items/common';
 import { createQuickPickItemOfT, createQuickPickSeparator } from '../../quickpicks/items/common';
 import type { DirectiveQuickPickItem } from '../../quickpicks/items/directive';
-import { createDirectiveQuickPickItem, Directive } from '../../quickpicks/items/directive';
+import { createDirectiveQuickPickItem, Directive, isDirectiveQuickPickItem } from '../../quickpicks/items/directive';
 import { fromNow } from '../../system/date';
 
 export type StartWorkItem = {
@@ -99,9 +99,12 @@ export class StartWorkCommand extends QuickCommand<State> {
 
 			assertsStartWorkStepState(state);
 
-			if (this.confirm(state.confirm)) {
+			if (state.action == null && this.confirm(state.confirm)) {
 				const result = yield* this.confirmStep(state, context);
-				if (result === StepResultBreak) continue;
+				if (result === StepResultBreak) {
+					state.item = undefined!;
+					continue;
+				}
 
 				state.action = result;
 			}
@@ -109,7 +112,6 @@ export class StartWorkCommand extends QuickCommand<State> {
 			if (typeof state.action === 'string') {
 				switch (state.action) {
 					case 'start':
-						//yield* this.startWorkCommandSteps(state.item.item);
 						yield* getSteps(
 							this.container,
 							{
@@ -119,7 +121,6 @@ export class StartWorkCommand extends QuickCommand<State> {
 									repo: undefined,
 									name: `${state.item.item.issue.id}-${state.item.item.issue.title}`,
 									suggestNameOnly: true,
-									//flags: ['--switch'],
 								},
 							},
 							this.pickedVia,
@@ -186,8 +187,10 @@ export class StartWorkCommand extends QuickCommand<State> {
 			items: items,
 			onDidClickItemButton: (_quickpick, button, { item }) => {
 				if (button === StartWorkQuickInputButton) {
-					startWork(item.item);
+					this.startWork(state, item);
+					return true;
 				}
+				return false;
 			},
 		});
 
@@ -239,15 +242,24 @@ export class StartWorkCommand extends QuickCommand<State> {
 				onDidClickItemButton: (_quickpick, button, _item) => {
 					switch (button) {
 						case StartWorkQuickInputButton:
-							startWork(state.item.item);
-							break;
+							if (isDirectiveQuickPickItem(_item)) return;
+							this.startWork(state);
+							return true;
 					}
+					return false;
 				},
 			},
 		);
 
 		const selection: StepSelection<typeof step> = yield step;
 		return canPickStepContinue(step, state, selection) ? selection[0].item : StepResultBreak;
+	}
+
+	private startWork(state: PartialStepState<State>, item?: StartWorkItem) {
+		state.action = 'start';
+		if (item != null) {
+			state.item = item;
+		}
 	}
 }
 
@@ -258,8 +270,4 @@ async function updateContextItems(container: Container, context: Context) {
 				item: i,
 			})) ?? [],
 	};
-}
-
-function startWork(_issue: SearchedIssue) {
-	// TODO: Hack here
 }
