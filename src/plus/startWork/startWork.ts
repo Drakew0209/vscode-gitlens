@@ -15,6 +15,7 @@ import {
 	StepResultBreak,
 } from '../../commands/quickCommand';
 import { ensureAccessStep } from '../../commands/quickCommand.steps';
+import { getSteps } from '../../commands/quickWizard.utils';
 import { proBadge } from '../../constants';
 import { HostingIntegrationId } from '../../constants.integrations';
 import type { Container } from '../../container';
@@ -108,7 +109,21 @@ export class StartWorkCommand extends QuickCommand<State> {
 			if (typeof state.action === 'string') {
 				switch (state.action) {
 					case 'start':
-						startWork(state.item.item);
+						//yield* this.startWorkCommandSteps(state.item.item);
+						yield* getSteps(
+							this.container,
+							{
+								command: 'branch',
+								state: {
+									subcommand: 'create',
+									repo: undefined,
+									name: `${state.item.item.issue.id}-${state.item.item.issue.title}`,
+									suggestNameOnly: true,
+									//flags: ['--switch'],
+								},
+							},
+							this.pickedVia,
+						);
 						break;
 				}
 			}
