@@ -149,8 +149,9 @@ export class StartWorkCommand extends QuickCommand<State> {
 		function getItemsAndPlaceholder() {
 			if (!context.result.items.length) {
 				return {
-					placeholder: 'All done! Take a vacation',
-					items: [createDirectiveQuickPickItem(Directive.Cancel, undefined, { label: 'OK' })],
+					placeholder: 'No issues found. Start work anyway.',
+					// TODO: items: [createCallbackQuickPickItem(() => startWork(null), undefined, { label: 'Start Work' })],
+					items: [createDirectiveQuickPickItem(Directive.Cancel, undefined, { label: 'Start Work' })],
 				};
 			}
 
