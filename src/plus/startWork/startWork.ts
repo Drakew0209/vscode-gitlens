@@ -23,6 +23,7 @@ import { proBadge } from '../../constants';
 import { Commands } from '../../constants.commands';
 import type { IntegrationId } from '../../constants.integrations';
 import { HostingIntegrationId } from '../../constants.integrations';
+import type { Source, Sources, StartWorkTelemetryContext } from '../../constants.telemetry';
 import type { Container } from '../../container';
 import { PlusFeatures } from '../../features';
 import type { SearchedIssue } from '../../git/models/issue';
@@ -30,6 +31,7 @@ import type { QuickPickItemOfT } from '../../quickpicks/items/common';
 import { createQuickPickItemOfT, createQuickPickSeparator } from '../../quickpicks/items/common';
 import type { DirectiveQuickPickItem } from '../../quickpicks/items/directive';
 import { createDirectiveQuickPickItem, Directive, isDirectiveQuickPickItem } from '../../quickpicks/items/directive';
+import { getScopedCounter } from '../../system/counter';
 import { fromNow } from '../../system/date';
 import { some } from '../../system/iterable';
 import { executeCommand } from '../../system/vscode/command';
@@ -49,6 +51,7 @@ export type StartWorkResult = { items: StartWorkItem[] };
 interface Context {
 	result: StartWorkResult;
 	title: string;
+	telemetryContext: StartWorkTelemetryContext | undefined;
 	connectedIntegrations: Map<IntegrationId, boolean>;
 }
 
@@ -63,6 +66,7 @@ export type StartWorkAction = 'start';
 
 export interface StartWorkCommandArgs {
 	readonly command: 'startWork';
+	source?: Sources;
 }
 
 function assertsStartWorkStepState(state: StepState<State>): asserts state is StartWorkStepState {
@@ -72,11 +76,22 @@ function assertsStartWorkStepState(state: StepState<State>): asserts state is St
 	throw new Error('Missing item');
 }
 
+const instanceCounter = getScopedCounter();
+
 export class StartWorkCommand extends QuickCommand<State> {
-	constructor(container: Container) {
+	private readonly source: Source;
+	private readonly telemetryContext: StartWorkTelemetryContext | undefined;
+	constructor(container: Container, args?: StartWorkCommandArgs) {
 		super(container, 'startWork', 'startWork', `Start Work\u00a0\u00a0${proBadge}`, {
 			description: 'Start work on an issue',
 		});
+
+		this.source = { source: args?.source ?? 'commandPalette' };
+
+		if (this.container.telemetry.enabled) {
+			this.telemetryContext = { instance: instanceCounter.next() };
+			this.container.telemetry.sendEvent('startWork/open', { ...this.telemetryContext }, this.source);
+		}
 
 		this.initialState = {
 			counter: 0,
@@ -91,14 +106,26 @@ export class StartWorkCommand extends QuickCommand<State> {
 		const context: Context = {
 			result: { items: [] },
 			title: this.title,
+			telemetryContext: this.telemetryContext,
 			connectedIntegrations: await this.container.startWork.getConnectedIntegrations(),
 		};
 
+		const opened = false;
 		while (this.canStepsContinue(state)) {
 			context.title = this.title;
 
 			const hasConnectedIntegrations = [...context.connectedIntegrations.values()].some(c => c);
 			if (!hasConnectedIntegrations) {
+				if (this.container.telemetry.enabled) {
+					this.container.telemetry.sendEvent(
+						opened ? 'startWork/steps/connect' : 'startWork/opened',
+						{
+							...context.telemetryContext!,
+							connected: false,
+						},
+						this.source,
+					);
+				}
 				const result = yield* this.confirmCloudIntegrationsConnectStep(state, context);
 				if (result === StepResultBreak) {
 					return result;
