@@ -19,9 +19,7 @@ import {
 } from '../../commands/quickCommand';
 import { ensureAccessStep } from '../../commands/quickCommand.steps';
 import { getSteps } from '../../commands/quickWizard.utils';
-import type { OpenWalkthroughCommandArgs } from '../../commands/walkthroughs';
 import { proBadge } from '../../constants';
-import { Commands } from '../../constants.commands';
 import type { IntegrationId } from '../../constants.integrations';
 import { HostingIntegrationId } from '../../constants.integrations';
 import type { Source, Sources, StartWorkTelemetryContext } from '../../constants.telemetry';
@@ -35,7 +33,6 @@ import { createDirectiveQuickPickItem, Directive, isDirectiveQuickPickItem } fro
 import { getScopedCounter } from '../../system/counter';
 import { fromNow } from '../../system/date';
 import { some } from '../../system/iterable';
-import { executeCommand } from '../../system/vscode/command';
 import { configuration } from '../../system/vscode/configuration';
 import { supportedStartWorkIntegrations } from './startWorkProvider';
 
@@ -189,21 +186,7 @@ export class StartWorkCommand extends QuickCommand<State> {
 		state: StepState<State>,
 		context: Context,
 	): AsyncStepResultGenerator<{ connected: boolean | IntegrationId; resume: () => void }> {
-		const confirmations: (QuickPickItemOfT<IntegrationId> | DirectiveQuickPickItem)[] = [
-			createDirectiveQuickPickItem(Directive.Cancel, undefined, {
-				label: 'Start Work lets you start work on an issue',
-				detail: 'Click to learn more about Start Work',
-				iconPath: new ThemeIcon('rocket'),
-				onDidSelect: () =>
-					// TODO: navigate to "start-work" related place
-					void executeCommand<OpenWalkthroughCommandArgs>(Commands.OpenWalkthrough, {
-						step: 'launchpad',
-						source: 'launchpad',
-						detail: 'info',
-					}),
-			}),
-			createQuickPickSeparator(),
-		];
+		const confirmations: (QuickPickItemOfT<IntegrationId> | DirectiveQuickPickItem)[] = [];
 
 		for (const integration of supportedStartWorkIntegrations) {
 			if (context.connectedIntegrations.get(integration)) {
@@ -274,19 +257,6 @@ export class StartWorkCommand extends QuickCommand<State> {
 		const step = this.createConfirmStep(
 			`${this.title} \u00a0\u2022\u00a0 Connect an ${hasConnectedIntegration ? 'Additional ' : ''}Integration`,
 			[
-				createDirectiveQuickPickItem(Directive.Cancel, undefined, {
-					label: 'Start Work lets you start work on an issue',
-					detail: 'Click to learn more about Start Work',
-					iconPath: new ThemeIcon('rocket'),
-					onDidSelect: () =>
-						// TODO: navigate to "start-work" related place
-						void executeCommand<OpenWalkthroughCommandArgs>(Commands.OpenWalkthrough, {
-							step: 'launchpad',
-							source: 'launchpad',
-							detail: 'info',
-						}),
-				}),
-				createQuickPickSeparator(),
 				createQuickPickItemOfT(
 					{
 						label: `Connect an ${hasConnectedIntegration ? 'Additional ' : ''}Integration...`,
