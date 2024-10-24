@@ -33,6 +33,7 @@ import { EnrichmentService } from './plus/launchpad/enrichmentService';
 import { LaunchpadIndicator } from './plus/launchpad/launchpadIndicator';
 import { LaunchpadProvider } from './plus/launchpad/launchpadProvider';
 import { RepositoryIdentityService } from './plus/repos/repositoryIdentityService';
+import { StartWorkProvider } from './plus/startWork/startWorkProvider';
 import type { GraphWebviewShowingArgs } from './plus/webviews/graph/registration';
 import {
 	registerGraphWebviewCommands,
@@ -235,6 +236,7 @@ export class Container {
 		this._disposables.push((this._vsls = new VslsController(this)));
 		this._disposables.push((this._eventBus = new EventBus()));
 		this._disposables.push((this._launchpadProvider = new LaunchpadProvider(this)));
+		this._disposables.push((this._startWorkProvider = new StartWorkProvider(this)));
 
 		this._disposables.push((this._fileAnnotationController = new FileAnnotationController(this)));
 		this._disposables.push((this._lineAnnotationController = new LineAnnotationController(this)));
@@ -552,6 +554,11 @@ export class Container {
 	private readonly _launchpadProvider: LaunchpadProvider;
 	get launchpad(): LaunchpadProvider {
 		return this._launchpadProvider;
+	}
+
+	private readonly _startWorkProvider: StartWorkProvider;
+	get startWork(): StartWorkProvider {
+		return this._startWorkProvider;
 	}
 
 	private readonly _git: GitProviderService;
